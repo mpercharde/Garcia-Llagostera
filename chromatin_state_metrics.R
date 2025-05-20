@@ -122,7 +122,6 @@ ggsaver(
 ## cleanup
 rm(g)
 
-
 # calculate, record, and plot the length of each state's segments
 ## calculate the length of each state and place into a new column
 seg <- seg %>%
@@ -330,13 +329,11 @@ rm(metadata, metadata_add, metadata_irf, metadata_new, metadata_old, seg, x,
    all_counts, counts_mat, dat, lens, thresh, genes_in_counts, genes_chr,
    tpm.mat, tpm.df)
 
-
 #################################################################################
-# transforming (log10) and plotting OE analysis of gene sets (re-analyzed, no-center)
+# transforming (log10) and plotting OE analysis of gene sets
 #################################################################################
 
-## load in fold enrichment values from overlap enrichment, 2kb TSS
-## loading in uniform scale results, as don't need Genome % for this
+## load in fold enrichment values from overlap enrichment
 res <- read.table(glue("{oe_outputs$oe_dat}/model_14-main_venn_sets-2kbTSS.no_center.txt"), header = T, 
                   row.names = 1, ## setting states column as rownames
                   sep = "\t")
@@ -345,7 +342,7 @@ res <- read.table(glue("{oe_outputs$oe_dat}/model_14-main_venn_sets-2kbTSS.no_ce
   tail(res)
   colnames(res)
 
-## process data frame and remove obsolete columns
+## process data frame
 ### rename columns
 #### create a vector of column names
 colnames(res)
@@ -376,9 +373,8 @@ mat_r <- as.matrix(res_r, mode = "numeric")
   is.numeric(mat_r)
   class(mat_r)
 
-## perform log10 transformation of data and export - venn sets only
-### no zero values present, so not adding pseudocount
-  ##mat_v_log <- log10(mat_v + 1e-8)  ## adding small pseudocount
+## perform log10 transformation of data and export - gene sets
+  ##mat_v_log <- log10(mat_v + 1e-8)  ## pseudocount
 mat_v_log <- log10(mat_v)
 ### check output
 summary(mat_v_log)
@@ -391,22 +387,7 @@ df.v.log$state <- rownames(mat_v_log)
 write.csv(df.v.log, glue("{outputs$oe_res}/oe-main_venn_sets-log10_trans_vals.no_center.new_ptm_tar.model_14.csv"), 
           row.names = FALSE)
 
-## perform log10 transformation of data and export - venn sets w/ random
-### no zero values present, so not adding pseudocount
-##mat_v_log <- log10(mat_v + 1e-8)  ## adding small pseudocount
-mat_r_log <- log10(mat_r)
-  ### check output
-  summary(mat_r_log)
-  any(is.na(mat_r_log))
-## convert to dataframe
-df.r.log <- as.data.frame(mat_r_log)
-### add chromatin state info
-df.r.log$state <- rownames(mat_r_log)
-## export results as csv
-write.csv(df.r.log, glue("{outputs$oe_res}/oe-main_venn_sets_with_random-log10_trans_vals.no_center.new_ptm_tar.model_14.csv"), 
-          row.names = FALSE)
-
-## plot heatmap of log2 transformed fold enrichment values - venn sets only
+## plot heatmap of log10 transformed fold enrichment values - gene sets
 oeCol_r = circlize::colorRamp2(c(-1.6, 0, 1.6), 
                                c("blue", "white", "red"))
 ### plot without number labels
@@ -440,7 +421,7 @@ pl2_v_log <- ComplexHeatmap::Heatmap(mat_v_log,
                                      cluster_columns = FALSE,
                                      row_names_side = "left",
                                      rect_gp = gpar(col = "darkgrey", lwd = 0.1),
-                                     column_title = "Log2FE of states in gene sets (no_center)",
+                                     column_title = "Log10FE of states in gene sets (no_center)",
                                      cell_fun = function(j, i, x, y, width, height, fill) {
                                        grid.text(sprintf("%.1f", mat_v_log[i, j]), x, y, gp = gpar(fontsize = 10))}
 )
@@ -456,60 +437,4 @@ png(here(outputs$oe_fig, glue("oe-main_venn_sets-log10_trans_vals.no_center.new_
 )
 draw(pl2_v_log)
 dev.off()
-
-
-## plot heatmap of log2 transformed fold enrichment values - venn sets w/ random sets
-oeCol_r = circlize::colorRamp2(c(-1.6, 0, 1.6), 
-                               c("blue", "white", "red"))
-### plot without number labels
-pl1_r_log <- ComplexHeatmap::Heatmap(mat_r_log, 
-                                     name = "Log10 FE", 
-                                     col = oeCol_r, 
-                                     cluster_rows = F, 
-                                     show_row_dend = FALSE,
-                                     cluster_columns = FALSE,
-                                     row_names_side = "left",
-                                     rect_gp = gpar(col = "darkgrey", lwd = 0.1),
-                                     column_title = "Log2FE of states in gene sets (w/ random genes, no_center)")
-pl1_r_log
-#### export the plot
-pdf(here(outputs$oe_fig, glue("oe-main_venn_sets_with_random-log10_trans_vals.no_center.new_ptm_tar.model_14.no_num.pdf")),
-    width = cm_to_inch(13), height = cm_to_inch(22)
-)
-draw(pl1_r_log)
-dev.off()
-png(here(outputs$oe_fig, glue("oe-main_venn_sets_with_random-log10_trans_vals.no_center.new_ptm_tar.model_14.no_num.png")),
-    width = 13, height = 22, units = "cm", res = 150
-)
-draw(pl1_r_log)
-dev.off()
-### plot with number value labels
-pl2_r_log <- ComplexHeatmap::Heatmap(mat_r_log, 
-                                     name = "Log10 FE", 
-                                     col = oeCol_r, 
-                                     cluster_rows = F, 
-                                     show_row_dend = FALSE,
-                                     cluster_columns = FALSE,
-                                     row_names_side = "left",
-                                     rect_gp = gpar(col = "darkgrey", lwd = 0.1),
-                                     column_title = "Log2FE of states in gene sets (w/ random genes, no_center)",
-                                     cell_fun = function(j, i, x, y, width, height, fill) {
-                                       grid.text(sprintf("%.1f", mat_r_log[i, j]), x, y, gp = gpar(fontsize = 10))}
-)
-pl2_r_log
-#### export the plot
-pdf(here(outputs$oe_fig, glue("oe-main_venn_sets_with_random-log10_trans_vals.no_center.new_ptm_tar.model_14.num.pdf")),
-    width = cm_to_inch(13), height = cm_to_inch(22)
-)
-draw(pl2_r_log)
-dev.off()
-png(here(outputs$oe_fig, glue("oe-main_venn_sets_with_random-log10_trans_vals.no_center.new_ptm_tar.model_14.num.png")),
-    width = 13, height = 22, units = "cm", res = 150
-)
-draw(pl2_r_log)
-dev.off()
-
-## cleanup
-rm(res, res_v, res_r, pl1_v_log, pl2_v_log, pl1_r_log, pl2_r_log,
-   mat_r, mat_v, mat_r_log, mat_v_log, df.r.log, df.v.log, oeCol_r)
 
